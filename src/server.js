@@ -1,9 +1,8 @@
-import "dotenv/config"
 import app from "./app.js"
 
-const PORT = process.env.PORT
+const PORT = 8080
 
-app.listen(PORT, ()=>{
-
-    console.log("Servidor corriendo en http://localhost:8080")
+// app.listen inicia el servidor HTTP y lo deja esperando peticiones.
+app.listen(PORT, () => {
+  console.log(`Servidor disponible en http://localhost:${PORT}`)
 })

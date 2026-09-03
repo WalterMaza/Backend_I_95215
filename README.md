@@ -1,184 +1,192 @@
-# Sistema de Gestión de Turnos y Reservas - Clase 2
+# Routers, Controllers y Organización de la API
 
-## Servidores con Express y API REST
+Proyecto de una plataforma de turnos y reservas que implementa una arquitectura REST organizada con Express, separando responsabilidades en rutas, controllers y managers para gestionar servicios y reservas (bookings).
 
-Este proyecto es una implementación práctica de los conceptos aprendidos en la Clase 2 del curso de Backend I. Demuestra la creación de un servidor web utilizando Express.js y el desarrollo de una API REST básica para un sistema de gestión de turnos y reservas.
+## Descripción del Proyecto
 
-## 📋 Contenido de la Clase 2
+Este proyecto es una API REST para una plataforma de turnos y reservas que permite:
+- **Gestionar servicios**: Crear, leer, actualizar y eliminar servicios disponibles (consultas médicas, fisioterapia, clases, etc.)
+- **Gestionar reservas (bookings)**: Crear, leer, actualizar y eliminar reservas de turnos para los servicios disponibles
 
-### Conceptos Principales
+La arquitectura sigue el patrón de separación de responsabilidades, donde cada capa tiene una función específica:
+- **Routers**: Definen los endpoints HTTP y delegan a los controllers
+- **Controllers**: Manejan la lógica de las peticiones HTTP (req/res) y delegan a los managers
+- **Managers**: Contienen la lógica de negocio y persistencia de datos
 
-- **Express.js**: Framework minimalista para Node.js que facilita la creación de servidores web y APIs
-- **API REST**: Arquitectura de interfaz de programación de aplicaciones que utiliza los métodos HTTP (GET, POST, PUT, DELETE)
-- **Rutas**: Definición de endpoints que responden a las solicitudes de los clientes
-- **Middleware**: Funciones que tienen acceso al objeto de solicitud (req) y respuesta (res)
-- **Variables de entorno**: Configuración sensible del servidor usando archivos .env
+## Instalación
 
-## 🚀 Tecnologías Utilizadas
-
-- **Node.js**: Entorno de ejecución JavaScript del lado del servidor
-- **Express.js**: Framework web para Node.js (v5.2.1)
-- **dotenv**: Módulo para cargar variables de entorno (v17.4.2)
-
-## 📁 Estructura del Proyecto
-
-```
-backend-turnos-reservas/
-├── .env                 # Variables de entorno
-├── src/                 # Carpeta principal del código fuente
-│   ├── app.js          # Configuración de Express y rutas
-│   └── server.js       # Punto de entrada del servidor
-├── package.json        # Dependencias del proyecto
-└── README.md           # Documentación
-```
-
-## 🔧 Instalación
-
-1. Clonar el repositorio y cambiar a la rama CLASE_2:
-```bash
-git clone <URL_DEL_REPOSITORIO>
-cd backend-turnos-reservas
-git checkout CLASE_2
-```
-
-2. Instalar las dependencias:
 ```bash
 npm install
 ```
 
-3. Configurar las variables de entorno en el archivo `.env`:
-```
-PORT=8080
-```
+## Ejecutar la API
 
-## ▶️ Ejecución
-
-Iniciar el servidor en modo desarrollo:
 ```bash
 npm run dev
 ```
 
-El servidor estará disponible en `http://localhost:8080`
+La API queda disponible en `http://localhost:8080`.
 
-## 🌐 Endpoints de la API
+## Estructura del Proyecto
 
-### GET `/`
-Endpoint de bienvenida que confirma que la API está funcionando.
-
-**Respuesta:**
-```json
-{
-  "status": "success",
-  "message": "API del Sistema de Turnos y Reservas"
-}
+```text
+src/
+├── app.js                    # Configuración principal de Express y registro de routers
+├── server.js                 # Punto de entrada que inicia el servidor
+├── data/                     # Archivos de persistencia (JSON)
+│   ├── services.json         # Almacén de servicios
+│   └── bookings.json        # Almacén de reservas
+├── managers/                 # Lógica de negocio y persistencia
+│   ├── ServicesManager.js    # CRUD de servicios
+│   └── BookingManager.js     # CRUD de reservas
+├── controllers/              # Manejo de peticiones HTTP
+│   ├── services.controller.js
+│   └── bookings.controller.js
+├── routes/                   # Definición de endpoints
+│   ├── services.router.js
+│   └── bookings.router.js
+└── pasos/                    # Ejercicios progresivos de la clase
+    ├── 01-memoria.js
+    ├── 02-leer-json.js
+    ├── 03-guardar-json.js
+    └── 04-manager.js
 ```
 
-### GET `/api/services`
-Retorna la lista de servicios disponibles en el sistema.
+## Arquitectura y Separación de Responsabilidades
 
-**Respuesta:**
-```json
-{
-  "status": "success",
-  "data": [
-    {
-      "id": 1,
-      "name": "Consulta médica general",
-      "duration": 30,
-      "price": 12000,
-      "category": "salud",
-      "available": true
-    },
-    {
-      "id": 2,
-      "name": "Sesión de fisioterapia",
-      "duration": 45,
-      "price": 15000,
-      "category": "rehabilitación",
-      "available": true
+### 1. Routers (Express Router)
+
+Los routers definen los endpoints HTTP y conectan las rutas con los controllers correspondientes.
+
+**services.router.js:**
+```javascript
+router.get("/", controllerGetAll)           // GET /api/services
+router.get("/:sid", controllerGet)          // GET /api/services/:sid
+router.post("/", controllerCreate)          // POST /api/services
+router.put("/:sid", controllerUpdate)       // PUT /api/services/:sid
+router.delete("/:sid", controllerDelete)    // DELETE /api/services/:sid
+```
+
+**bookings.router.js:**
+```javascript
+router.get("/", controllerGetAll)           // GET /api/bookings
+router.get("/:bid", controllerGet)          // GET /api/bookings/:bid
+router.post("/", controllerCreate)          // POST /api/bookings
+router.put("/:bid", controllerUpdate)       // PUT /api/bookings/:bid
+router.delete("/:bid", controllerDelete)    // DELETE /api/bookings/:bid
+```
+
+### 2. Controllers
+
+Los controllers manejan la interacción con las peticiones HTTP (request/response), validan parámetros, manejan errores y delegan la lógica de negocio a los managers.
+
+**Responsabilidades:**
+- Extraer parámetros de la URL (`req.params`)
+- Leer el body de la petición (`req.body`)
+- Llamar a los managers para ejecutar operaciones
+- Enviar respuestas HTTP con códigos de estado apropiados
+- Manejar errores y responder con mensajes claros
+
+**Ejemplo (services.controller.js):**
+```javascript
+export async function controllerGet(req, res) {
+    try {
+        const { sid } = req.params
+        const service = await getServiceById(sid)
+        if (!service) {
+            return res.status(404).json({ status: "error", message: "Service not found" })
+        }
+        res.status(200).json({ status: "success", data: service })
+    } catch (error) {
+        res.status(500).json({ status: "error", message: error.message })
     }
-  ]
 }
 ```
 
-## 📚 Conceptos Implementados
+### 3. Managers
 
-### 1. Configuración de Express
+Los managers contienen la lógica de negocio y la persistencia de datos. Son independientes de Express y pueden ser reutilizados en otros contextos.
+
+**Responsabilidades:**
+- Leer y escribir archivos JSON (persistencia)
+- Generar IDs únicos (UUID)
+- Validar y transformar datos
+- Implementar la lógica CRUD
+
+**Ejemplo (ServicesManager.js):**
 ```javascript
-import express from "express"
-const app = express()
+export async function addService(serviceData) {
+    const services = await getServices()
+    const newService = {
+        id: randomUUID(),
+        name: serviceData.name,
+        duration: serviceData.duration,
+        price: serviceData.price,
+        category: serviceData.category,
+        available: serviceData.available
+    }
+    services.push(newService)
+    await fs.writeFile(FILE_PATH, JSON.stringify(services, null, 2))
+    return newService
+}
 ```
 
-### 2. Definición de Rutas
-```javascript
-app.get("/", (req, res) => {
-    res.status(200).json({
-        status: "success",
-        message: "API del Sistema de Turnos y Reservas"
-    })
-})
+## API Endpoints
+
+### Servicios
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/services` | Obtener todos los servicios |
+| GET | `/api/services/:sid` | Obtener un servicio por ID |
+| POST | `/api/services` | Crear un nuevo servicio |
+| PUT | `/api/services/:sid` | Actualizar un servicio |
+| DELETE | `/api/services/:sid` | Eliminar un servicio |
+
+**Ejemplo de servicio:**
+```json
+{
+  "id": "cbd26ef5-4f83-4bd9-9a58-493f7fca1c06",
+  "name": "Consulta médica general",
+  "duration": 30,
+  "price": 12000,
+  "category": "salud",
+  "available": true
+}
 ```
 
-### 3. Respuestas JSON
-Todas las respuestas siguen un formato consistente con `status` y `data/message`.
+### Reservas (Bookings)
 
-### 4. Variables de Entorno
-```javascript
-import "dotenv/config"
-const PORT = process.env.PORT
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/bookings` | Obtener todas las reservas |
+| GET | `/api/bookings/:bid` | Obtener una reserva por ID |
+| POST | `/api/bookings` | Crear una nueva reserva |
+| PUT | `/api/bookings/:bid` | Actualizar una reserva |
+| DELETE | `/api/bookings/:bid` | Eliminar una reserva |
+
+**Ejemplo de reserva:**
+```json
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "service": "cbd26ef5-4f83-4bd9-9a58-493f7fca1c06",
+  "quantity": 1
+}
 ```
 
-### 5. Inicio del Servidor
-```javascript
-app.listen(PORT, () => {
-    console.log("Servidor corriendo en http://localhost:8080")
-})
-```
+## Flujo de una Petición
 
-## 🎯 Objetivos de Aprendizaje
+1. **Cliente** envía una petición HTTP (ej: `POST /api/bookings`)
+2. **Router** (`bookings.router.js`) recibe la petición y la delega al controller correspondiente
+3. **Controller** (`bookings.controller.js`) extrae datos de `req.body` y llama al manager
+4. **Manager** (`BookingManager.js`) ejecuta la lógica de negocio y persiste en `bookings.json`
+5. **Controller** recibe el resultado y envía la respuesta HTTP al cliente
+6. **Cliente** recibe la respuesta con el resultado de la operación
 
-- ✅ Crear un servidor web con Express.js
-- ✅ Implementar rutas básicas de una API REST
-- ✅ Manejar respuestas JSON con códigos de estado HTTP
-- ✅ Utilizar variables de entorno para configuración
-- ✅ Estructurar un proyecto backend de manera modular
+## Ventajas de esta Arquitectura
 
-## 🔮 Próximos Pasos
-
-Para las siguientes clases se podrían implementar:
-- Métodos HTTP adicionales (POST, PUT, DELETE)
-- Conexión a base de datos
-- Validación de datos
-- Autenticación y autorización
-- Manejo de errores avanzado
-
-## 📝 Notas de la Clase
-
-Este proyecto sirve como base para entender los fundamentos de la creación de APIs REST con Express. Los datos actualmente se almacenan en memoria (array), pero en un entorno de producción se utilizaría una base de datos persistente.
-
-## 🌿 Acceso a la Rama CLASE_2 en GitHub
-
-Este proyecto se encuentra en la rama `CLASE_2` del repositorio. La rama `main` contiene el código de la Clase 1.
-
-### Para acceder a la rama CLASE_2:
-
-**Si ya tienes el repositorio clonado:**
-```bash
-git checkout CLASE_2
-```
-
-**Si estás clonando el repositorio por primera vez:**
-```bash
-git clone -b CLASE_2 <URL_DEL_REPOSITORIO>
-```
-
-**Para ver todas las ramas disponibles:**
-```bash
-git branch -a
-```
-
-**Para actualizar tu rama local con los cambios de GitHub:**
-```bash
-git pull origin CLASE_2
-```
-
+- **Separación de responsabilidades**: Cada capa tiene una función específica y clara
+- **Mantenibilidad**: Fácil de modificar y extender sin afectar otras partes
+- **Reutilización**: Los managers pueden usarse fuera del contexto HTTP
+- **Testeabilidad**: Cada capa puede probarse independientemente
+- **Escalabilidad**: Fácil agregar nuevos recursos siguiendo el mismo patrón

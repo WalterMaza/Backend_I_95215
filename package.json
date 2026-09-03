@@ -1,17 +1,17 @@
 {
-  "name": "backend-turnos-reservas",
+  "name": "clase-filesystem-2h",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Proyecto incremental para enseñar persistencia con FileSystem en una clase de 2 horas",
   "type": "module",
   "scripts": {
-    "dev": "node src/server.js"
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "paso:1": "node src/pasos/01-memoria.js",
+    "paso:2": "node src/pasos/02-leer-json.js",
+    "paso:3": "node src/pasos/03-guardar-json.js",
+    "paso:4": "node src/pasos/04-manager.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1"
+    "express": "^5.1.0"
   }
 }

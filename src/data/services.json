@@ -1,0 +1,26 @@
+[
+  {
+    "id": "cbd26ef5-4f83-4bd9-9a58-493f7fca1c06",
+    "name": "Consulta médica general",
+    "duration": 30,
+    "price": 12000,
+    "category": "salud",
+    "available": true
+  },
+  {
+    "id": "99e94ebd-cef6-437e-bfbd-095521f1664f",
+    "name": "Sesión de fisioterapia",
+    "duration": 45,
+    "price": 15000,
+    "category": "rehabilitación",
+    "available": true
+  },
+  {
+    "id": "a64604fe-5253-4414-9305-69237778c9bd",
+    "name": "Clases de Programación III",
+    "duration": 60,
+    "price": 54321,
+    "category": "IT",
+    "available": true
+  }
+]
