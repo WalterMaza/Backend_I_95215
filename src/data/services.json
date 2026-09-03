@@ -1,0 +1,18 @@
+[
+  {
+    "id": "cbd26ef5-4f83-4bd9-9a58-493f7fca1c06",
+    "name": "Consulta médica general",
+    "duration": 30,
+    "price": 12000,
+    "category": "salud",
+    "available": true
+  },
+  {
+    "id": "99e94ebd-cef6-437e-bfbd-095521f1664f",
+    "name": "Sesión de fisioterapia",
+    "duration": 45,
+    "price": 15000,
+    "category": "rehabilitación",
+    "available": true
+  }
+]

@@ -1,0 +1,51 @@
+### Bienvenida
+GET http://localhost:8080/
+
+### Obtener todos los servicios
+GET http://localhost:8080/api/services
+
+### Crear un servicio
+POST http://localhost:8080/api/services
+Content-Type: application/json
+
+{
+  "name": "Masaje relajante",
+  "duration": 60,
+  "price": 18000,
+  "category": "bienestar",
+  "available": true
+}
+
+### Crear un servicio incompleto — debe responder 400
+POST http://localhost:8080/api/services
+Content-Type: application/json
+
+{
+  "name": "Servicio incompleto"
+}
+
+### Copiar aquí un UUID real obtenido mediante GET
+@serviceId = cbd26ef5-4f83-4bd9-9a58-493f7fca1c06
+
+### Obtener un servicio por UUID
+GET http://localhost:8080/api/services/{{serviceId}}
+
+### Actualizar solamente el precio
+PUT http://localhost:8080/api/services/{{serviceId}}
+Content-Type: application/json
+
+{
+  "price": 13500
+}
+
+### Intentar cambiar el ID — debe conservar el original
+PUT http://localhost:8080/api/services/{{serviceId}}
+Content-Type: application/json
+
+{
+  "id": "ID-ENVIADO-POR-EL-CLIENTE",
+  "available": false
+}
+
+### Eliminar el servicio
+DELETE http://localhost:8080/api/services/{{serviceId}}
