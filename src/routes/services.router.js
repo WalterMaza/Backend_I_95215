@@ -19,3 +19,4 @@ router.put("/:sid", controllerUpdate)
 router.delete("/:sid", controllerDelete)
 
 export default router
+

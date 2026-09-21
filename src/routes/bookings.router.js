@@ -19,3 +19,4 @@ router.put("/:bid", controllerUpdate)
 router.delete("/:bid", controllerDelete)
 
 export default router
+

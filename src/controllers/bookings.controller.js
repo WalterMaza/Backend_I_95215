@@ -1,7 +1,7 @@
-import { getBookings, getBookingById, addBooking, updateBooking, deleteBooking } from "../managers/BookingManager.js"
+import { getBookings, getBookingById, addBooking, updateBooking, deleteBooking } from "../services/bookings.service.js"
 
 // controller que (1)obtiene todas las reservas pidiendoselas al la siguiente
-// etapa (en este caso es el manager), y luego (2)responde al frontend
+// etapa (en este caso es el service), y luego (2)responde al frontend
 export async function controllerGetAll(req, res) {
 
     try {
@@ -69,3 +69,4 @@ export async function controllerDelete(req, res) {
         res.status(500).json({ status: "error", message: error.message })
     }
 }
+
