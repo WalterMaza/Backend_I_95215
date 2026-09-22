@@ -1,9 +1,9 @@
-
+// En este archivo se realizan las operaciones de lógica de negocio
+// La lógica de negocio es la parte del código que define cómo se van a procesar los datos
 
 import { getServices, getServiceById, addService, updateService, deleteService } from "../services/services.service.js"
 
-// controller que (1)obtiene todos los servicios pidiendoselos al la siguiente
-// etapa (en este caso es el service), y luego (2)responde al frontend
+
 export async function controllerGetAll(req, res) {
 
     try {

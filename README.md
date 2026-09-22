@@ -1,6 +1,6 @@
-# Clase 5 · Arquitectura en capas
+# Clase 6 · MongoDB Atlas y Mongoose
 
-Continuación de WalterMaza/Backend_I_95215, rama CLASE_4.
+Curso de Programación Backend I - Coderhouse
 
 ## Iniciar
 
@@ -9,141 +9,123 @@ npm install
 npm run dev
 ```
 
-La API escucha en http://localhost:8080. Conserva Express y los módulos ESM.
+La API escucha en http://localhost:8080. 
 
-`src/config/env.config.js` lee `process.env.PORT`, con 8080 como valor predeterminado.
-`.env.example` documenta la configuración: no se carga automáticamente.
-Opcional, con Node 20.6 o posterior: copiar `.env.example` como `.env` y ejecutar
-`node --env-file=.env src/server.js`. Para la clase basta `npm run dev`.
+**Importante:** Antes de iniciar, asegúrate de configurar la variable de entorno `MONGODB_URI` en el archivo `.env` con tu cadena de conexión de MongoDB Atlas.
 
-## Qué cambió y por qué
+## Cambios realizados en esta clase
 
-- Se quitó `src/pasos` y sus cuatro comandos del package.json.
-- El código de lectura y escritura de los managers se trasladó a `src/dao`.
-- Se agregaron repositories que delegan cada operación al DAO.
-- Se agregaron services. Generan el ID y descartan el ID enviado al actualizar.
-- Los controllers importan los services. Sus respuestas y las rutas se mantienen.
-- El puerto se separó en `src/config/env.config.js`.
+### Persistencia en MongoDB para Services
 
-No se incorporaron clases, factories, inyección de dependencias, MongoDB ni middleware de errores. Usamos funciones, imports y async/await, como la base.
+En esta clase se actualizó la persistencia del recurso **services** de filesystem (archivos JSON) a **MongoDB** utilizando Mongoose como ODM.
 
-## Recorrido
+**Cambios principales:**
+- El **ID** ya no es generado por `randomUUID` en el service, sino que es generado **automáticamente por MongoDB** al crear un documento.
+- El DAO de services (`src/dao/services.dao.js`) ahora usa métodos de Mongoose para interactuar con la base de datos.
+- Se creó el modelo Mongoose en `src/models/services.models.js` que define la estructura de los documentos en la colección.
 
-Petición → router → controller → service → repository → DAO → archivo JSON.
-El resultado vuelve mediante `return` hasta el controller, que responde al cliente.
+### Bookings (Reservas) - Sin cambios
 
-| Archivo/carpeta | Responsabilidad |
-| --- | --- |
-| routes | Relacionar URL y método HTTP con un controller |
-| controllers | Leer req y responder con res |
-| services | Decidir las reglas del sistema y preparar los datos |
-| repositories | Ofrecer acceso a datos y delegar en el DAO elegido |
-| dao | Leer, buscar y escribir en JSON |
-| data | Conservar los registros |
+El recurso **bookings** se mantuvo con persistencia en filesystem (archivos JSON) tal cual estaba en la clase anterior. Esto permite comparar ambos enfoques y apreciar mejor el cambio realizado en services.
 
-En esta versión el repository es deliberadamente pequeño: permite mostrar la separación sin introducir otra técnica. El DAO devuelve null o false cuando no encuentra un recurso; el controller conserva la respuesta 404 de la clase anterior.
+**Invitación a la práctica:** Como ejercicio de repaso, te invitamos a aplicar en bookings lo mismo que se realizó en services respecto al cambio de persistencia a MongoDB.
 
-## Orden sugerido para enseñar (2 horas)
+## Métodos de Mongoose utilizados
 
-1. 0–15 min: ejecutar la clase 4 y seguir un GET desde router hasta manager.
-2. 15–35 min: trasladar la persistencia a DAO; comparar el código conocido.
-3. 35–50 min: incorporar repository y explicar los return.
-4. 50–70 min: incorporar service; recorrer GET de punta a punta.
-5. 70–90 min: recorrer POST y PUT, ubicando la generación y protección del ID.
-6. 90–105 min: replicar el patrón en bookings y probar el CRUD.
-7. 105–120 min: practicar una regla de negocio con arrays, separada del proyecto.
+### `find()`
+Devuelve todos los documentos de una colección que coinciden con el filtro.
 
-## Endpoints conservados
+```javascript
+const services = await Service.find().lean();
+// Retorna: Array de objetos JavaScript planos con todos los servicios
+```
 
-| Método | Servicios | Reservas |
-| --- | --- | --- |
-| GET | /api/services | /api/bookings |
-| GET por ID | /api/services/:sid | /api/bookings/:bid |
-| POST | /api/services | /api/bookings |
-| PUT | /api/services/:sid | /api/bookings/:bid |
-| DELETE | /api/services/:sid | /api/bookings/:bid |
+### `findById(id)`
+Busca un documento por su `_id` (identificador único de MongoDB).
 
-Ejemplo de body de servicio:
+```javascript
+const service = await Service.findById(id).lean();
+// Retorna: Objeto del servicio encontrado o null si no existe
+```
+
+### `create(data)`
+Crea un nuevo documento en la colección y lo valida según el esquema.
+
+```javascript
+const newService = await Service.create(serviceData);
+// Retorna: Documento Mongoose del servicio creado con su _id generado
+```
+
+### `findByIdAndUpdate(id, changes, options)`
+Busca un documento por `_id` y lo actualiza con los cambios especificados.
+
+```javascript
+const updatedService = await Service.findByIdAndUpdate(id, changes).lean();
+// Retorna: Objeto del servicio actualizado o null si no existe
+```
+
+### `findByIdAndDelete(id)`
+Busca un documento por `_id` y lo elimina de la colección.
+
+```javascript
+const deletedService = await Service.findByIdAndDelete(id).lean();
+// Retorna: Objeto del servicio eliminado o null si no existía
+```
+
+### `lean()`
+Convierte documentos Mongoose a objetos JavaScript planos (sin métodos Mongoose). Se usa para obtener datos más ligeros y serializables.
+
+## Cómo probar los endpoints con Postman
+
+### Configuración
+- Base URL: `http://localhost:8080`
+
+### Ejemplos de datos para probar
+
+Puedes usar los siguientes datos de ejemplo para probar los endpoints de services:
 
 ```json
-{"name":"Consulta general","duration":30,"price":12000,"category":"salud","available":true}
-```
-
-Ejemplo de body de reserva (usar un ID obtenido de services):
-
-```json
-{"service":"ID_DEL_SERVICIO","quantity":1}
-```
-
-La clase 4 permite actualizaciones parciales mediante PUT: se mantiene ese comportamiento por continuidad. Semánticamente, las modificaciones parciales suelen expresarse con PATCH; aquí no cambiamos el contrato de la API.
-
-## Diferencia entre la base y el material de Coderhouse (nota docente)
-
-La semana 5 indica mantener los endpoints, pero enumera una reserva con varios servicios y POST /api/bookings/:bid/services/:sid. La rama CLASE_4 enlazada guarda un solo servicio por reserva y no tiene ese endpoint.
-
-Este proyecto es el refactor de esa rama: mantiene su modelo y sus endpoints. No implementa el modelo completo de reservas de la consigna. Para enseñar la regla de incrementar cantidades sin resolverla directamente, usar el ejercicio independiente de lista de materiales que sigue.
-
-## Ejercicio resuelto: acumular cantidades (fuera del proyecto)
-
-Objetivo: una lista de materiales guarda referencias por ID. Si un material ya estaba, aumentar su cantidad. Esta decisión pertenece al service, no a la lectura/escritura del DAO.
-
-### 1. Encontrar un material
-
-```js
-const materiales = [{ id: 'm1', nombre: 'Tornillo' }]
-const material = materiales.find(item => item.id === 'm1')
-console.log(material) // { id: 'm1', nombre: 'Tornillo' }
-```
-
-### 2. Guardar solo la referencia
-
-```js
-const lista = { id: 'l1', materiales: [] }
-lista.materiales.push({ material: 'm1', quantity: 1 })
-console.log(lista.materiales) // [{ material: 'm1', quantity: 1 }]
-```
-
-### 3. Incrementar en lugar de duplicar
-
-```js
-const existente = lista.materiales.find(item => item.material === 'm1')
-if (existente) {
-  existente.quantity += 1
-} else {
-  lista.materiales.push({ material: 'm1', quantity: 1 })
-}
-console.log(lista.materiales) // [{ material: 'm1', quantity: 2 }]
-```
-
-`find` devuelve el objeto que está dentro del array: modificar quantity modifica ese objeto. Todavía no se escribió ningún archivo.
-
-### 4. Convertirlo en una regla de service
-
-Este fragmento muestra la regla completa sobre datos recibidos, sin Express ni FileSystem:
-
-```js
-function agregarMaterial(lista, material) {
-  if (!lista) throw new Error('Lista no encontrada')
-  if (!material) throw new Error('Material no encontrado')
-
-  const existente = lista.materiales.find(item => item.material === material.id)
-  if (existente) {
-    existente.quantity += 1
-  } else {
-    lista.materiales.push({ material: material.id, quantity: 1 })
+[
+  {
+    "name": "Consulta médica general",
+    "duration": 30,
+    "price": 12000,
+    "category": "salud",
+    "available": true
+  },
+  {
+    "name": "Sesión de fisioterapia",
+    "duration": 45,
+    "price": 15000,
+    "category": "rehabilitación",
+    "available": true
+  },
+  {
+    "name": "Clases de Programación I",
+    "duration": 60,
+    "price": 54321,
+    "category": "IT",
+    "available": true
   }
-  return lista
-}
-
-const listaPrueba = { id: 'l1', materiales: [] }
-const tornillo = { id: 'm1', nombre: 'Tornillo' }
-agregarMaterial(listaPrueba, tornillo)
-agregarMaterial(listaPrueba, tornillo)
-console.log(listaPrueba.materiales) // Un elemento, quantity: 2
+]
 ```
 
-En una aplicación con capas, el service obtiene la lista y el material mediante sus repositories, aplica esta regla y pide guardar mediante `repository.update`. El DAO recibe el resultado y lo persiste: no decide si sumar o insertar.
+### Endpoints disponibles
 
-## Alcance didáctico
+| Método | Endpoint | Descripción |
+| --- | --- | --- |
+| GET | `/api/services` | Obtener todos los servicios |
+| GET | `/api/services/:id` | Obtener un servicio por ID (usar el _id de MongoDB) |
+| POST | `/api/services` | Crear un nuevo servicio |
+| PUT | `/api/services/:id` | Actualizar un servicio existente |
+| DELETE | `/api/services/:id` | Eliminar un servicio |
 
-El refactor conserva las validaciones limitadas de la clase 4. No agrega validaciones de campos ni verifica que el ID del servicio de una reserva exista. Esas reglas pueden practicarse en el service por separado. Tampoco resuelve escrituras concurrentes en JSON: es una base para practicar localmente, antes de trabajar con una base de datos.
+**Nota:** Al crear un servicio con POST, MongoDB generará automáticamente el `_id`. Este ID aparecerá en la respuesta y deberás usarlo para las operaciones GET, PUT y DELETE.
+
+## Ver datos en MongoDB Atlas
+
+![Botón para refrescar la vista en MongoDB Atlas](Capture.PNG)
+
+**Importante:** Cuando estés en la página de MongoDB Atlas y quieras ver los datos agregados, actualizados o eliminados, debes **refrescar la vista** ya que no suele actualizarse automáticamente. Esto puede hacer que parezca que los cambios no impactaron en la Base de Datos cuando en realidad sí lo hicieron.
+
+El botón para refrescar se encuentra como se muestra en la imagen arriba.

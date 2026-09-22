@@ -1,4 +1,4 @@
-// app.js
+// Este archivo configura las rutas de la aplicación
 import express from "express"
 import servicesRouter from "./routes/services.router.js"
 import bookingsRouter from "./routes/bookings.router.js"
