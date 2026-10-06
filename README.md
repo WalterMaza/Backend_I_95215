@@ -1,4 +1,4 @@
-# Clase 6 · MongoDB Atlas y Mongoose
+# Clase 8 · Consultas Avanzadas, Validación y Populate
 
 Curso de Programación Backend I - Coderhouse
 
@@ -15,117 +15,279 @@ La API escucha en http://localhost:8080.
 
 ## Cambios realizados en esta clase
 
-### Persistencia en MongoDB para Services
+### 1. Consultas Avanzadas (Filtros, Paginación y Ordenamiento)
 
-En esta clase se actualizó la persistencia del recurso **services** de filesystem (archivos JSON) a **MongoDB** utilizando Mongoose como ODM.
+Se implementaron consultas avanzadas en el endpoint `GET /api/services` utilizando el plugin `mongoose-paginate-v2`. Esto permite filtrar, paginar y ordenar los resultados de manera eficiente.
 
-**Cambios principales:**
-- El **ID** ya no es generado por `randomUUID` en el service, sino que es generado **automáticamente por MongoDB** al crear un documento.
-- El DAO de services (`src/dao/services.dao.js`) ahora usa métodos de Mongoose para interactuar con la base de datos.
-- Se creó el modelo Mongoose en `src/models/services.models.js` que define la estructura de los documentos en la colección.
+#### Implementación por capas
 
-### Bookings (Reservas) - Sin cambios
+**Controller (`src/controllers/services.controller.js`):**
+- Extrae los query params de la URL (`category`, `available`, `page`, `limit`, `sort`)
+- Construye objetos `filters` y `options` para enviar a las capas inferiores
+- Ejemplo de datos capturados:
+  ```javascript
+  // URL: GET /api/services?category=salud&available=true&page=1&limit=5&sort=desc
+  req.query = { category: "salud", available: "true", page: "1", limit: "5", sort: "desc" }
+  
+  // Datos enviados al service:
+  filters = { category: "salud", available: "true" }
+  options = { page: "1", limit: "5", sort: "desc" }
+  ```
 
-El recurso **bookings** se mantuvo con persistencia en filesystem (archivos JSON) tal cual estaba en la clase anterior. Esto permite comparar ambos enfoques y apreciar mejor el cambio realizado en services.
+**Service (`src/services/services.service.js`):**
+- Recibe y pasa los parámetros al repository sin modificarlos
+- Mantiene la responsabilidad de lógica de negocio separada del acceso a datos
 
-**Invitación a la práctica:** Como ejercicio de repaso, te invitamos a aplicar en bookings lo mismo que se realizó en services respecto al cambio de persistencia a MongoDB.
+**Repository (`src/repositories/services.repository.js`):**
+- Actúa como intermediario entre service y DAO
+- Delega la ejecución de la consulta al DAO con los parámetros recibidos
 
-## Métodos de Mongoose utilizados
+**DAO (`src/dao/services.dao.js`):**
+- Construye el query de MongoDB dinámicamente según los filtros
+- Configura las opciones de paginación y ordenamiento
+- Usa `Service.paginate()` del plugin mongoose-paginate-v2
+- Retorna un objeto con metadata de paginación y los documentos
 
-### `find()`
-Devuelve todos los documentos de una colección que coinciden con el filtro.
+#### Ejemplos de uso con Postman
 
-```javascript
-const services = await Service.find().lean();
-// Retorna: Array de objetos JavaScript planos con todos los servicios
+**Filtrar por categoría:**
 ```
-
-### `findById(id)`
-Busca un documento por su `_id` (identificador único de MongoDB).
-
-```javascript
-const service = await Service.findById(id).lean();
-// Retorna: Objeto del servicio encontrado o null si no existe
+GET http://localhost:8080/api/services?category=salud
 ```
-
-### `create(data)`
-Crea un nuevo documento en la colección y lo valida según el esquema.
-
-```javascript
-const newService = await Service.create(serviceData);
-// Retorna: Documento Mongoose del servicio creado con su _id generado
-```
-
-### `findByIdAndUpdate(id, changes, options)`
-Busca un documento por `_id` y lo actualiza con los cambios especificados.
-
-```javascript
-const updatedService = await Service.findByIdAndUpdate(id, changes).lean();
-// Retorna: Objeto del servicio actualizado o null si no existe
-```
-
-### `findByIdAndDelete(id)`
-Busca un documento por `_id` y lo elimina de la colección.
-
-```javascript
-const deletedService = await Service.findByIdAndDelete(id).lean();
-// Retorna: Objeto del servicio eliminado o null si no existía
-```
-
-### `lean()`
-Convierte documentos Mongoose a objetos JavaScript planos (sin métodos Mongoose). Se usa para obtener datos más ligeros y serializables.
-
-## Cómo probar los endpoints con Postman
-
-### Configuración
-- Base URL: `http://localhost:8080`
-
-### Ejemplos de datos para probar
-
-Puedes usar los siguientes datos de ejemplo para probar los endpoints de services:
-
+Respuesta:
 ```json
-[
-  {
-    "name": "Consulta médica general",
-    "duration": 30,
-    "price": 12000,
-    "category": "salud",
-    "available": true
-  },
-  {
-    "name": "Sesión de fisioterapia",
-    "duration": 45,
-    "price": 15000,
-    "category": "rehabilitación",
-    "available": true
-  },
-  {
-    "name": "Clases de Programación I",
-    "duration": 60,
-    "price": 54321,
-    "category": "IT",
-    "available": true
+{
+  "status": "success",
+  "data": {
+    "docs": [...],
+    "totalDocs": 2,
+    "totalPages": 1,
+    "page": 1,
+    "limit": 10,
+    ...
   }
-]
+}
 ```
 
-### Endpoints disponibles
+**Filtrar por disponibilidad:**
+```
+GET http://localhost:8080/api/services?available=true
+```
+
+**Paginación:(cargar un buena cantidad de servicios para esta prueba)**
+```
+GET http://localhost:8080/api/services?page=1&limit=5
+```
+
+**Ordenamiento por precio:**
+```
+GET http://localhost:8080/api/services?sort=desc
+```
+- `sort=asc`: orden ascendente (menor a mayor)
+- `sort=desc`: orden descendente (mayor a menor)
+
+**Combinar filtros, paginación y ordenamiento:**
+```
+GET http://localhost:8080/api/services?category=estetica&available=true&page=1&limit=10&sort=asc
+```
+
+### 2. Validación con Zod
+
+Se implementó validación de datos de entrada usando la librería **Zod**, una librería de validación de esquemas TypeScript-first. Esto asegura que los datos recibidos en las requests cumplan con la estructura y tipos esperados antes de procesarlos.
+
+#### Archivos creados
+
+**Middleware de validación (`src/middlewares/validateBody.js`):**
+- Middleware que intercepta las requests antes del controller
+- Valida `req.body` contra un esquema Zod usando `safeParse()`
+- Si la validación falla, retorna error 400 con detalles de los campos inválidos
+- Si es exitosa, reemplaza `req.body` con los datos validados
+
+**Esquema de validación (`src/validations/service.validations.js`):**
+- Define el esquema Zod para crear servicios
+- Especifica tipos, validaciones y reglas para cada campo
+- Ejemplo del esquema:
+  ```javascript
+  export const createServiceSchema = z.object({
+    name: z.string().trim().min(1),        // String no vacío
+    description: z.string().trim().min(1), // String no vacío
+    duration: z.number().min(1),           // Número positivo
+    price: z.number().min(1),              // Número positivo
+    category: z.string().trim().min(1),    // String no vacío
+    available: z.boolean()                 // Booleano obligatorio
+  })
+  ```
+
+**Router actualizado (`src/routes/services.router.js`):**
+- Agrega el middleware `validateBody` antes del controller en la ruta POST
+- Aplica el esquema `createServiceSchema` para validar el body
+
+#### Ejemplos de uso con Postman
+
+**Request válida:**
+```
+POST http://localhost:8080/api/services
+Content-Type: application/json
+
+{
+  "name": "Consulta médica",
+  "description": "Consulta general con médico",
+  "duration": 30,
+  "price": 12000,
+  "category": "salud",
+  "available": true
+}
+```
+Respuesta: `201 Created` con el servicio creado
+
+**Request inválida (campo faltante):**
+```
+POST http://localhost:8080/api/services
+Content-Type: application/json
+
+{
+  "name": "Consulta médica",
+  "price": 12000
+}
+```
+Respuesta: `400 Bad Request`
+```json
+{
+  "status": "error",
+  "message": "Datos inválidos",
+  "error": [
+    { "field": "description", "message": "Required" },
+    { "field": "duration", "message": "Required" },
+    { "field": "category", "message": "Required" },
+    { "field": "available", "message": "Required" }
+  ]
+}
+```
+
+**Request inválida (tipo incorrecto):**
+```
+POST http://localhost:8080/api/services
+Content-Type: application/json
+
+{
+  "name": "Consulta médica",
+  "description": "Consulta general",
+  "duration": "30",  // String en lugar de número
+  "price": 12000,
+  "category": "salud",
+  "available": true
+}
+```
+Respuesta: `400 Bad Request`
+```json
+{
+  "status": "error",
+  "message": "Datos inválidos",
+  "error": [
+    { "field": "duration", "message": "Expected number, received string" }
+  ]
+}
+```
+
+### 3. Populate (Consultas con relaciones)
+
+Se implementó el uso de **populate** de Mongoose para resolver relaciones entre documentos. Esto permite obtener datos completos de documentos relacionados en una sola consulta, en lugar de solo sus IDs.
+
+#### Modelo de Bookings actualizado
+
+El modelo `Bookings` fue actualizado para incluir una relación con `Services`:
+```javascript
+services: [{
+  service: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Services",  // Referencia al modelo Services
+    required: true
+  },
+  quantity: { type: Number, default: 1 }
+}]
+```
+
+#### Implementación en DAO
+
+En `src/dao/bookings.dao.js`, el método `getById()` usa `populate()`:
+```javascript
+const booking = await Booking.findById(id).populate('services.service');
+```
+
+- Sin `populate()`: `services.service` contiene solo el ObjectId (ej: `"507f1f77bcf86cd799439011"`)
+- Con `populate()`: `services.service` contiene el documento completo del servicio con todos sus campos
+
+#### Ejemplos de uso con Postman
+
+**Obtener una reserva con populate:**
+```
+GET http://localhost:8080/api/bookings/:bid
+```
+
+Respuesta (sin populate - solo IDs):
+```json
+{
+  "_id": "...",
+  "clientName": "Juan Pérez",
+  "clientEmail": "juan@example.com",
+  "date": "2026-10-10",
+  "time": "10:00",
+  "status": "pending",
+  "services": [
+    {
+      "service": "507f1f77bcf86cd799439011",  // Solo el ObjectId
+      "quantity": 2
+    }
+  ]
+}
+```
+
+Respuesta (con populate - documentos completos):
+```json
+{
+  "_id": "...",
+  "clientName": "Juan Pérez",
+  "clientEmail": "juan@example.com",
+  "date": "2026-10-10",
+  "time": "10:00",
+  "status": "pending",
+  "services": [
+    {
+      "service": {
+        "_id": "507f1f77bcf86cd799439011",
+        "name": "Consulta médica general",
+        "description": "Consulta general con médico",
+        "duration": 30,
+        "price": 12000,
+        "category": "salud",
+        "available": true
+      },
+      "quantity": 2
+    }
+  ]
+}
+```
+
+## Endpoints disponibles
+
+### Services
+
+| Método | Endpoint | Descripción | Query Params |
+| --- | --- | --- | --- |
+| GET | `/api/services` | Obtener servicios con filtros, paginación y ordenamiento | `category`, `available`, `page`, `limit`, `sort` |
+| GET | `/api/services/:sid` | Obtener un servicio por ID | - |
+| POST | `/api/services` | Crear un nuevo servicio (con validación Zod) | - |
+| PUT | `/api/services/:sid` | Actualizar un servicio existente | - |
+| DELETE | `/api/services/:sid` | Eliminar un servicio | - |
+
+### Bookings
 
 | Método | Endpoint | Descripción |
 | --- | --- | --- |
-| GET | `/api/services` | Obtener todos los servicios |
-| GET | `/api/services/:id` | Obtener un servicio por ID (usar el _id de MongoDB) |
-| POST | `/api/services` | Crear un nuevo servicio |
-| PUT | `/api/services/:id` | Actualizar un servicio existente |
-| DELETE | `/api/services/:id` | Eliminar un servicio |
+| GET | `/api/bookings` | Obtener todas las reservas |
+| GET | `/api/bookings/:bid` | Obtener una reserva por ID (con populate) |
+| POST | `/api/bookings` | Crear una nueva reserva |
+| PUT | `/api/bookings/:bid` | Actualizar una reserva existente |
+| DELETE | `/api/bookings/:bid` | Eliminar una reserva |
 
-**Nota:** Al crear un servicio con POST, MongoDB generará automáticamente el `_id`. Este ID aparecerá en la respuesta y deberás usarlo para las operaciones GET, PUT y DELETE.
 
-## Ver datos en MongoDB Atlas
-
-![Botón para refrescar la vista en MongoDB Atlas](Capture.PNG)
-
-**Importante:** Cuando estés en la página de MongoDB Atlas y quieras ver los datos agregados, actualizados o eliminados, debes **refrescar la vista** ya que no suele actualizarse automáticamente. Esto puede hacer que parezca que los cambios no impactaron en la Base de Datos cuando en realidad sí lo hicieron.
-
-El botón para refrescar se encuentra como se muestra en la imagen arriba.

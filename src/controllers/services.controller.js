@@ -7,8 +7,27 @@ import { getServices, getServiceById, addService, updateService, deleteService }
 export async function controllerGetAll(req, res) {
 
     try {
+        // Extraer query params de la URL para filtros y opciones de paginación
+        // Ejemplo: GET /api/services?category=salud&available=true&page=1&limit=5&sort=desc
+        // req.query = { category: "salud", available: "true", page: "1", limit: "5", sort: "desc" }
+        const { category, available, page, limit, sort } = req.query;
         
-        const services = await getServices()
+        // Construir objeto de filtros para enviar a las capas inferiores
+        // filters = { category: "salud", available: "true" }
+        const filters = {};
+        if (category) filters.category = category;
+        if (available !== undefined) filters.available = available;
+        
+        // Construir objeto de opciones de paginación y ordenamiento
+        // options = { page: "1", limit: "5", sort: "desc" }
+        const options = {};
+        if (page) options.page = page;
+        if (limit) options.limit = limit;
+        if (sort) options.sort = sort;
+        
+        // Pasar filtros y opciones al service layer
+        // El flujo es: Controller -> Service -> Repository -> DAO
+        const services = await getServices(filters, options)
 
         res.status(200).json({ status: "success", data: services })
         

@@ -1,7 +1,9 @@
 import mongoose from "mongoose"
+import mongoosePaginate from "mongoose-paginate-v2" // Plugin que agregará paginate() al modelo.
 
 const serviceSchema = new mongoose.Schema({
 
+  // Nuestro schema puede seguir teniendo la estructura que ya veníamos utilizando.
   name: { type: String, required: true },
   description: { type: String},
   duration: { type: Number, required: true },
@@ -10,4 +12,8 @@ const serviceSchema = new mongoose.Schema({
   available: { type: Boolean, default: true }
 })
 
-export default mongoose.model("Service", serviceSchema)
+// Le decimos a Mongoose que use el plugin paginate en este modelo.
+serviceSchema.plugin(mongoosePaginate);
+
+export default mongoose.model("Services", serviceSchema)
+

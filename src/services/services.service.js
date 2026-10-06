@@ -2,8 +2,8 @@
 // No usa req/res ni lee archivos.
 import * as repository from "../repositories/services.repository.js"
 
-export async function getServices() {
-  return repository.getAll()
+export async function getServices(filters = {}, options = {}) {
+  return repository.getAll(filters, options)
 }
 
 export async function getServiceById(id) {

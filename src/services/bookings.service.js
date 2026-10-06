@@ -1,6 +1,5 @@
 // Service: prepara los datos y concentra las decisiones del sistema.
-// No usa req/res ni lee archivos. Conservamos las operaciones de clase 4.
-import { randomUUID } from "crypto"
+// No usa req/res ni lee archivos.
 import * as repository from "../repositories/bookings.repository.js"
 
 export async function getBookings() {
@@ -12,9 +11,8 @@ export async function getBookingById(id) {
 }
 
 export async function addBooking(data) {
-  // El cliente no elige el ID: lo genera el servidor.
-  const newData = { ...data, id: randomUUID() }
-  return repository.create(newData)
+  // MongoDB genera el ID automáticamente (_id)
+  return repository.create(data)
 }
 
 export async function updateBooking(id, changes) {

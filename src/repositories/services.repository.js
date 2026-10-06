@@ -2,8 +2,8 @@
 // Cuando cambiemos la persistencia, este import será el punto de conexión.
 import * as dao from "../dao/services.dao.js"
 
-export async function getAll() {
-  return dao.getAll()
+export async function getAll(filters = {}, options = {}) {
+  return dao.getAll(filters, options)
 }
 
 export async function getById(id) {

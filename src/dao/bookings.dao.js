@@ -1,97 +1,73 @@
-// DAO: conserva la lectura y escritura de JSON de la clase anterior.
-// Recibe datos preparados; no conoce Express ni decide reglas del negocio.
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
+// Este archivo maneja las operaciones de acceso a datos para la colección de reservas.
+// Usa Mongoose para interactuar con MongoDB.
 
-// 1. Configuración automática de la ruta absoluta de datos
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import Booking from "../models/bookings.models.js";
 
-const FILE_PATH = path.join(__dirname, '../data/bookings.json');
-
-// Función interna o exportada para leer el archivo
+// Obtener todas las reservas
 export async function getAll() {
   try {
-    const data = await fs.readFile(FILE_PATH, 'utf-8');
-    return JSON.parse(data);
+    // find() devuelve todos los documentos de la colección
+    // lean() convierte los documentos Mongoose a objetos JavaScript planos
+    const bookings = await Booking.find().lean();
+    return bookings;
   } catch (error) {
-    // Si el archivo no existe (error ENOENT), devuelve un array vacío para no romper la app
-    if (error.code === 'ENOENT') return [];
+    console.error('Error al obtener reservas de MongoDB:', error);
     throw error;
   }
 }
 
-// Busca una reserva por ID.
+// Buscar una reserva por ID
+// findOne busca un documento, en este caso por _id (identificador único en MongoDB)
 export async function getById(id) {
-  const bookings = await getAll();
-
-  return bookings.find(booking => booking.id === id) ?? null;
+  try {
+    // populate() reemplaza los ObjectId referenciados con los documentos completos
+    // 'services.service' indica que debe poblar el campo 'service' dentro del array 'services'
+    // El modelo Booking tiene: services: [{ service: { type: ObjectId, ref: "Services" }, quantity: Number }]
+    // Sin populate: services.service = "507f1f77bcf86cd799439011" (solo el ObjectId)
+    // Con populate: services.service = { _id: "...", name: "...", price: ..., ... } (documento completo)
+    const booking = await Booking.findById(id).populate('services.service');
+    return booking ?? null;
+  } catch (error) {
+    console.error('Error al buscar reserva por ID en MongoDB:', error);
+    throw error;
+  }
 }
 
-// Agrega una nueva reserva.
+// Crear (guarda en la BD) una nueva reserva
+// create() valida los datos según el esquema (required, etc.)
+// y los guarda en la colección 'bookings' de MongoDB
 export async function create(bookingData) {
-  const bookings = await getAll();
-
-  // El service ya generó el ID; el DAO lo guarda.
-  const newBooking = {
-    id: bookingData.id,
-    service: bookingData.service,
-    quantity: bookingData.quantity
-  };
-
-  bookings.push(newBooking);
-
-  await fs.writeFile(
-    FILE_PATH,
-    JSON.stringify(bookings, null, 2)
-  );
-
-  return newBooking;
+  try {
+    const newBooking = await Booking.create(bookingData);
+    return newBooking.toObject();
+  } catch (error) {
+    console.error('Error al crear reserva en MongoDB:', error);
+    throw error;
+  }
 }
 
-// Actualiza una reserva existente.
+// Actualizar una reserva existente
+// findByIdAndUpdate busca por _id y actualiza el documento
 export async function update(id, changes) {
-  const bookings = await getAll();
+  try {
+    const updatedBooking = await Booking.findByIdAndUpdate(id, changes).lean();
 
-  const bookingIndex = bookings.findIndex(
-    booking => booking.id === id
-  );
-
-  if (bookingIndex === -1) {
-    return null;
+    return updatedBooking ?? null;
+  } catch (error) {
+    console.error('Error al actualizar reserva en MongoDB:', error);
+    throw error;
   }
-
-  bookings[bookingIndex] = {
-    ...bookings[bookingIndex],
-    ...changes
-  };
-
-  await fs.writeFile(
-    FILE_PATH,
-    JSON.stringify(bookings, null, 2)
-  );
-
-  return bookings[bookingIndex];
 }
 
-// Elimina una reserva.
+// Eliminar una reserva
+// findByIdAndDelete busca por _id y elimina el documento
 export async function remove(id) {
-  const bookings = await getAll();
-
-  const filteredBookings = bookings.filter(
-    booking => booking.id !== id
-  );
-
-  if (filteredBookings.length === bookings.length) {
-    return false;
+  try {
+    const deletedBooking = await Booking.findByIdAndDelete(id).lean();
+    return deletedBooking !== null;
+  } catch (error) {
+    console.error('Error al eliminar reserva de MongoDB:', error);
+    throw error;
   }
-
-  await fs.writeFile(
-    FILE_PATH,
-    JSON.stringify(filteredBookings, null, 2)
-  );
-
-  return true;
 }
 
